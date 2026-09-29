@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.8.1] - 2026-09-29
+
+### Fixed
+
+- Markdown front matter is now read as skill selection metadata only on
+  explicit selection-definition paths: a file named `SKILL.md`,
+  `.claude/agents/*.md`, `.claude/commands/**`, and `.cursor/rules/*.mdc`.
+  Previously, any Markdown file with a `description:` key was treated as a
+  skill at any path (H1.8 on ordinary docs pages), and any `name:` key under
+  a `skills/`, `agents/`, or `commands/` directory triggered H1.1 — including
+  a skill's own `assets/`, `references/`, and example files. Directory scans
+  also include Cursor `.mdc` rules now. Reported with reproduction, controls,
+  and boundary analysis by [@armelhbobdad](https://github.com/armelhbobdad)
+  in [#143](https://github.com/hermes-labs-ai/lintlang/issues/143); fixed in
+  [#145](https://github.com/hermes-labs-ai/lintlang/pull/145).
+- The `llms-full.txt` gate sentence now documents the narrowed boundary:
+  front matter is selection metadata only on the paths above.
+
 ## [0.8.0] - 2026-09-27
 
 ### Added
