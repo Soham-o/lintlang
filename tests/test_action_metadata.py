@@ -73,7 +73,7 @@ def test_marketplace_metadata_and_inputs_are_minimal():
     inputs = ACTION["inputs"]
     assert set(inputs) == {"path", "fail-on", "baseline", "python-version", "sarif-file"}
     assert inputs["path"]["required"] is True
-    assert inputs["fail-on"]["default"] == "fail"
+    assert inputs["fail-on"]["default"] == ""
     assert inputs["baseline"]["required"] is False
     assert inputs["baseline"]["default"] == ""
     assert inputs["python-version"]["default"] == "3.12"
@@ -98,7 +98,8 @@ def test_selected_action_ref_is_installed_and_inputs_are_not_shell_interpolated(
         "LINTLANG_FAIL_ON": "${{ inputs.fail-on }}",
         "LINTLANG_BASELINE": "${{ inputs.baseline }}",
     }
-    assert 'LINTLANG_ARGS=(scan "$LINTLANG_PATH" --fail-on "$LINTLANG_FAIL_ON")' in scan["run"]
+    assert 'LINTLANG_ARGS=(scan "$LINTLANG_PATH")' in scan["run"]
+    assert 'LINTLANG_ARGS=(scan "$LINTLANG_PATH" --format sarif)' in sarif_scan["run"]
     assert sarif_scan["if"] == "inputs.sarif-file != ''"
     assert sarif_scan["env"] == {
         "LINTLANG_PATH": "${{ inputs.path }}",
@@ -107,6 +108,8 @@ def test_selected_action_ref_is_installed_and_inputs_are_not_shell_interpolated(
         "LINTLANG_SARIF_FILE": "${{ inputs.sarif-file }}",
     }
     for step in (scan, sarif_scan):
+        assert 'if [ -n "$LINTLANG_FAIL_ON" ]; then' in step["run"]
+        assert 'LINTLANG_ARGS+=(--fail-on "$LINTLANG_FAIL_ON")' in step["run"]
         assert 'LINTLANG_ARGS+=(--baseline "$LINTLANG_BASELINE")' in step["run"]
         assert 'lintlang "${LINTLANG_ARGS[@]}"' in step["run"]
         assert "--write-baseline" not in step["run"]
@@ -115,7 +118,7 @@ def test_selected_action_ref_is_installed_and_inputs_are_not_shell_interpolated(
     assert "${{" not in sarif_scan["run"]
 
 
-def test_default_action_command_preserves_clean_and_failing_fixtures(tmp_path):
+def test_explicit_fail_on_blocks_failing_fixture(tmp_path):
     lintlang_bin = _real_lintlang_path(tmp_path)
     scan = ACTION["runs"]["steps"][2]
     base_env = {
@@ -138,6 +141,63 @@ def test_default_action_command_preserves_clean_and_failing_fixtures(tmp_path):
         outcomes.append(completed.returncode)
 
     assert outcomes == [0, 1]
+
+
+def _write_review_only_fixture(tmp_path: Path) -> Path:
+    """A skill whose only finding is MEDIUM H1.9 (name/directory mismatch)."""
+    skill_dir = tmp_path / "skills" / "wrong-dir"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        "---\n"
+        "name: right-name\n"
+        "description: A skill that does the thing when the user asks for the thing to be done properly.\n"
+        "---\n"
+        "\n"
+        "# Right Name\n"
+        "\n"
+        "Do the thing.\n",
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+@pytest.mark.parametrize("output_format", ["terminal", "sarif"])
+@pytest.mark.parametrize(
+    ("fail_on", "fixture", "expected"),
+    [
+        # Advisory default: empty input never fails on verdicts.
+        ("", "bad", 0),
+        ("", "review-only", 0),
+        # 'fail' blocks only on FAIL verdicts.
+        ("fail", "bad", 1),
+        ("fail", "review-only", 0),
+        # 'review' blocks on FAIL or REVIEW verdicts.
+        ("review", "bad", 1),
+        ("review", "review-only", 1),
+    ],
+)
+def test_fail_on_thresholds(tmp_path, output_format, fail_on, fixture, expected):
+    lintlang_bin = _real_lintlang_path(tmp_path)
+    if fixture == "bad":
+        source: Path = REPO_ROOT / "samples" / "bad_tool_descriptions.yaml"
+    else:
+        source = _write_review_only_fixture(tmp_path)
+    env = {
+        **os.environ,
+        "PATH": f"{lintlang_bin}{os.pathsep}{os.environ['PATH']}",
+        "PYTHONPATH": str(REPO_ROOT / "src"),
+        "LINTLANG_PATH": str(source),
+        "LINTLANG_FAIL_ON": fail_on,
+        "LINTLANG_BASELINE": "",
+        "LINTLANG_SARIF_FILE": str(tmp_path / "report.sarif"),
+    }
+    completed = _run_action(output_format, tmp_path, env)
+    assert completed.returncode == expected, completed.stdout + completed.stderr
+    if output_format == "sarif":
+        # The report is written even when the verdict is advisory or blocking.
+        document = json.loads((tmp_path / "report.sarif").read_text(encoding="utf-8"))
+        assert document["version"] == "2.1.0"
+        assert document["runs"][0]["results"]
 
 
 def test_sarif_step_writes_real_report_before_preserving_failing_verdict(tmp_path):
