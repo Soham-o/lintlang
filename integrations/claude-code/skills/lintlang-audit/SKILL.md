@@ -32,7 +32,9 @@ rewrites a file or blocks a tool call.
 
 2. **Resolve a runner, in this order.** Stop at the first that works.
 
-   - `lintlang --version` prints `lintlang 0.8.1` → use `lintlang`.
+   - `lintlang --version` prints `lintlang` 0.8.1 or newer → use `lintlang`.
+     A newer installed release is fine — report which version produced the
+     result, because counts and codes can differ between releases.
    - Otherwise, if `uvx` is available, use the pinned release with no install
      and no PATH change:
 

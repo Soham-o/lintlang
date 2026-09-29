@@ -16,6 +16,11 @@ from typing import Any
 SUPPORTED_SUFFIXES = {".json", ".md", ".prompt", ".py", ".txt", ".yaml", ".yml"}
 MAX_FINDINGS = 8
 PINNED_VERSION = "0.8.1"
+# The installed runner is accepted at the pinned release or newer: a user who
+# deliberately installed a newer lintlang must never be refused or told to
+# downgrade. The strict `==` pin applies only to the fetch/install guidance
+# (uvx / pip), never to an executable the user already has.
+_MINIMUM_VERSION = (0, 8, 1)
 
 # Claude Code runs hooks with the user's project directory as the working
 # directory, and `python3 -m lintlang` prepends the working directory to the
@@ -66,7 +71,25 @@ def _emit(context: str | None = None) -> None:
     print(json.dumps(output))
 
 
+def _parse_version(text: str) -> tuple[int, ...] | None:
+    """Parse `lintlang X.Y.Z` into a version tuple, or None if unparseable."""
+    parts = text.strip().split()
+    if len(parts) != 2 or parts[0] != "lintlang":
+        return None
+    try:
+        return tuple(int(p) for p in parts[1].split("."))
+    except ValueError:
+        return None
+
+
 def _is_pinned(command: list[str]) -> bool:
+    """True when the installed runner meets the minimum version (>= pinned).
+
+    The name is kept for compatibility with the existing test that
+    monkeypatches it; the semantics are a minimum-version gate, not an
+    exact-match pin. The exact `==` pin lives only in the install/fetch
+    guidance the hook emits when no usable runner is found.
+    """
     try:
         completed = subprocess.run(
             [*command, "--version"],
@@ -79,7 +102,10 @@ def _is_pinned(command: list[str]) -> bool:
         )
     except (OSError, subprocess.TimeoutExpired):
         return False
-    return completed.returncode == 0 and completed.stdout.strip() == f"lintlang {PINNED_VERSION}"
+    if completed.returncode != 0:
+        return False
+    version = _parse_version(completed.stdout)
+    return version is not None and version >= _MINIMUM_VERSION
 
 
 def _module_command() -> list[str] | None:
@@ -159,7 +185,7 @@ def main() -> int:
     command = _lintlang_command()
     if command is None:
         _emit(
-            f"LintLang could not check the changed file because lintlang {PINNED_VERSION} is not available. "
+            f"LintLang could not check the changed file because no lintlang {PINNED_VERSION} or newer is available. "
             f"Install it with `pipx install lintlang=={PINNED_VERSION}`, then retry the edit or run "
             "`lintlang scan <file>`."
         )

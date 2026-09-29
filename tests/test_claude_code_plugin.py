@@ -129,7 +129,9 @@ def test_agent_plugins_root_manifest_is_present_and_conformant() -> None:
     assert set(root_manifest.keys()) <= AGENT_PLUGINS_SCHEMA_KEYS
 
     assert root_manifest["name"] == "lintlang" == claude_manifest["name"]
-    assert root_manifest["version"] == "0.2.0" == claude_manifest["version"]
+    # The manifest version must track the current release — a hard-coded version
+    # here is exactly the staleness that shipped 0.2.0 manifests for 0.8.1.
+    assert root_manifest["version"] == __version__ == claude_manifest["version"]
 
     # Author-identifying fields must not diverge from the Claude manifest.
     assert set(root_manifest.get("author", {})) <= {"name", "email", "url"}
