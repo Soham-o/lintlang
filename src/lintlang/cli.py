@@ -397,7 +397,7 @@ def _cmd_scan(args: argparse.Namespace) -> int:
             except UnicodeDecodeError as error:
                 results[str(virtual)] = input_error_result(virtual, str(error))
                 continue
-            except OSError as error:
+            except (OSError, UnicodeError) as error:
                 results[str(virtual)] = input_error_result(virtual, f"Failed to read standard input: {error}")
                 continue
             result = scan_source(text, virtual, patterns=args.patterns, explicit=not args.allow_uninspected)

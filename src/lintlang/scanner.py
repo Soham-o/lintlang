@@ -633,10 +633,6 @@ def scan_python_file(
     from .extractors import extract_from_python_file
 
     path = Path(path)
-    try:
-        read_file_text(path)
-    except UnicodeDecodeError as error:
-        return input_error_result(path, str(error))
     return _scan_python_extraction(extract_from_python_file(path), path, patterns=patterns)
 
 

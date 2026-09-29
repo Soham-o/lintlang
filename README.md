@@ -13,11 +13,11 @@
 [![License](https://img.shields.io/pypi/l/lintlang)](LICENSE)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/hermes-labs-ai/lintlang/badge)](https://scorecard.dev/viewer/?uri=github.com/hermes-labs-ai/lintlang)
 
-[Product page](https://lintlang.ai/) · [Playground](https://hermes-labs.ai/lintlang#playground) · [PyPI](https://pypi.org/project/lintlang/) · [Docs](llms-full.txt)
+[Product page](https://lintlang.ai/) · [Playground](https://hermes-labs.ai/lintlang#playground) · [PyPI](https://pypi.org/project/lintlang/) · [Docs](llms-full.txt) · [简体中文](docs/zh-CN/README.md)
 
 </div>
 
-LintLang is a local, deterministic static linter for the instructions and tool interfaces an AI agent is given. It flags ambiguous tool choices, conflicting requirements, schema gaps, missing bounds, and other setup defects before the agent runs.
+LintLang is a local, deterministic static linter for the instructions and tool interfaces an AI agent is given. It flags ambiguous tool choices, mixed output formats, schema gaps, missing bounds, and other setup defects before the agent runs.
 
 **Point it at a project directory.** LintLang finds supported agent-facing content inside the files you already use: MCP and function-tool definitions nested in JSON/YAML, parameter schemas, system prompts, messages, output contracts, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `SKILL.md`, and supported Python prompt code.
 
@@ -44,7 +44,7 @@ LintLang catches problems like:
 - **Ambiguous tools** — sibling tools that overlap without a clear reason for the model to choose one over another.
 - **Missing bounds** — retries, loops, or tool use without explicit stopping or progress conditions.
 - **Schema mismatches** — missing required fields, unclear parameters, and schemas that do not communicate enough intent.
-- **Conflicting instructions** — incompatible output requirements, vague priorities, and contradictory directions.
+- **Mixed output formats and missing priorities** — a prompt that names more than one output format (H6 flags any two recognized formats, even when each is scoped to a case), and long instruction lists with no stated priority order (H5). LintLang does not detect semantic contradictions between two instructions, for example "always do X" next to "never do X".
 - **SKILL.md defects** — missing or invalid metadata, unclear usage criteria, and skill names that do not match their directory.
 - **Context and message errors** — stale project references, unbounded persistence, malformed roles, and broken tool-message sequences.
 - **Embedded agent logic** — supported Python prompts, literal tool definitions, and selected pipeline thresholds.
@@ -141,6 +141,7 @@ LintLang does not run models, observe runtime tool choices, or establish that an
 - [Technical reference](llms-full.txt) — supported structures, detector behavior, CLI, JSON, and SARIF
 - [GitHub CI and Code Scanning](docs/github.md)
 - [Baselines](docs/baselines.md)
+- [Research: relational tool-description analysis (H1.6)](docs/research.md) — the [Tool Differentia technical note](https://doi.org/10.5281/zenodo.21817243) and its scope, and the [taxonomy of epistemic failure modes](https://doi.org/10.5281/zenodo.19042468) that motivates the tool
 - [Integrations](docs/integrations.md)
 - [Changelog](CHANGELOG.md)
 

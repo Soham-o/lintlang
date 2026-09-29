@@ -54,9 +54,9 @@ def decode_file_bytes(raw: bytes) -> str:
 
 
 def read_file_text(path: str | Path) -> str:
-    """Read a file as UTF-8 text."""
+    """Read UTF-8 text with the universal newlines used by ``Path.read_text``."""
     path = Path(path)
-    return decode_file_bytes(path.read_bytes())
+    return decode_file_bytes(path.read_bytes()).replace("\r\n", "\n").replace("\r", "\n")
 
 
 def parse_file(path: str | Path) -> AgentConfig:
