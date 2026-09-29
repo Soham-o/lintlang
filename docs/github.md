@@ -95,7 +95,7 @@ so a deliberate replacement remains reviewable.
 | First-party Action with omitted `fail-on` | None by verdict; findings are advisory |
 
 The Action passes `--fail-on` to the CLI only when the `fail-on` input is
-non-empty; the empty default keeps the scan advisory, exactly like the CLI
+non-empty; the empty default keeps the scan advisory by default, exactly like the CLI
 without a verdict threshold. Set `fail-on: fail` to enforce on HIGH or
 CRITICAL findings, or `fail-on: review` to enforce on MEDIUM and above. The
 legacy CLI `--fail-under` quality gate is separate;

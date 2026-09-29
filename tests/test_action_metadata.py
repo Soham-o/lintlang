@@ -38,11 +38,11 @@ def _action_env(tmp_path: Path, source: Path, baseline: Path | None = None, **ex
     }
 
 
-def _run_action(output_format: str, tmp_path: Path, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+def _run_action(output_format: str, tmp_path: Path, env: dict[str, str], cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
     scan = ACTION["runs"]["steps"][3 if output_format == "sarif" else 2]
     return subprocess.run(
         ["bash", "-e", "-o", "pipefail", "-c", scan["run"]],
-        cwd=tmp_path,
+        cwd=tmp_path if cwd is None else cwd,
         env=env,
         text=True,
         capture_output=True,
@@ -179,19 +179,22 @@ def _write_review_only_fixture(tmp_path: Path) -> Path:
 def test_fail_on_thresholds(tmp_path, output_format, fail_on, fixture, expected):
     lintlang_bin = _real_lintlang_path(tmp_path)
     if fixture == "bad":
-        source: Path = REPO_ROOT / "samples" / "bad_tool_descriptions.yaml"
+        # Keep the scan inside the repo so SARIF source-root checks pass.
+        source = "samples/bad_tool_descriptions.yaml"
+        cwd = REPO_ROOT
     else:
-        source = _write_review_only_fixture(tmp_path)
+        source = str(_write_review_only_fixture(tmp_path))
+        cwd = tmp_path
     env = {
         **os.environ,
         "PATH": f"{lintlang_bin}{os.pathsep}{os.environ['PATH']}",
         "PYTHONPATH": str(REPO_ROOT / "src"),
-        "LINTLANG_PATH": str(source),
+        "LINTLANG_PATH": source,
         "LINTLANG_FAIL_ON": fail_on,
         "LINTLANG_BASELINE": "",
         "LINTLANG_SARIF_FILE": str(tmp_path / "report.sarif"),
     }
-    completed = _run_action(output_format, tmp_path, env)
+    completed = _run_action(output_format, tmp_path, env, cwd=cwd)
     assert completed.returncode == expected, completed.stdout + completed.stderr
     if output_format == "sarif":
         # The report is written even when the verdict is advisory or blocking.

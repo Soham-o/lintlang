@@ -11,7 +11,7 @@ inputs:
     description: File or directory containing agent instructions to scan.
     required: true
   fail-on:
-    description: Verdict threshold that fails the workflow. Leave empty (the default) for advisory mode: the scan reports findings but never fails the workflow. Set to 'fail' to fail on FAIL verdicts, or 'review' to fail on FAIL or REVIEW verdicts.
+    description: "Verdict threshold that fails the workflow. Leave empty (the default) for advisory mode: the scan reports findings but never fails the workflow. Set to 'fail' to fail on FAIL verdicts, or 'review' to fail on FAIL or REVIEW verdicts."
     required: false
     default: ""
   baseline:
