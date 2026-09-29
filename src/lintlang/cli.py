@@ -10,6 +10,7 @@ from pathlib import Path
 from . import __version__
 from .github_init import configure_init_parser, run_init
 from .herm import confidence_breakdown
+from .parsers import decode_file_bytes
 from .patterns import PATTERNS as _PATTERNS
 from .preflight_cli import configure_preflight_parser, run_preflight
 from .report import compute_verdict, format_markdown, format_summary_table, format_terminal, strip_ansi
@@ -392,7 +393,10 @@ def _cmd_scan(args: argparse.Namespace) -> int:
             try:
                 stream = getattr(sys.stdin, "buffer", sys.stdin)
                 data = stream.read()
-                text = data.decode("utf-8") if isinstance(data, bytes) else data
+                text = decode_file_bytes(data) if isinstance(data, bytes) else data
+            except UnicodeDecodeError as error:
+                results[str(virtual)] = input_error_result(virtual, str(error))
+                continue
             except (OSError, UnicodeError) as error:
                 results[str(virtual)] = input_error_result(virtual, f"Failed to read standard input: {error}")
                 continue

@@ -21,10 +21,48 @@ from .patterns import AgentConfig, SkillMeta, ToolDef, is_localization_reference
 from .source_map import SourceMap
 
 
+class UnicodeDecodeErrorWithHint(UnicodeDecodeError, ValueError):
+    """UnicodeDecodeError carrying an actionable remediation message."""
+
+    def __init__(self, message: str, original: UnicodeDecodeError):
+        super().__init__(
+            original.encoding,
+            original.object,
+            original.start,
+            original.end,
+            original.reason,
+        )
+        self.message = message
+
+    def __str__(self) -> str:
+        return self.message
+
+
+def decode_file_bytes(raw: bytes) -> str:
+    """Decode raw bytes as UTF-8 with actionable decode errors."""
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError as error:
+        if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+            message = (
+                "LintLang reads UTF-8 and the file appears to be UTF-16 encoded. "
+                "Please save or convert the file as UTF-8."
+            )
+        else:
+            message = "File is not valid UTF-8. LintLang requires UTF-8 encoding."
+        raise UnicodeDecodeErrorWithHint(message, error) from error
+
+
+def read_file_text(path: str | Path) -> str:
+    """Read UTF-8 text with the universal newlines used by ``Path.read_text``."""
+    path = Path(path)
+    return decode_file_bytes(path.read_bytes()).replace("\r\n", "\n").replace("\r", "\n")
+
+
 def parse_file(path: str | Path) -> AgentConfig:
     """Parse a file into an AgentConfig based on extension."""
     path = Path(path)
-    return parse_source(path.read_text(encoding="utf-8"), path)
+    return parse_source(read_file_text(path), path)
 
 
 def parse_source(text: str, path: str | Path) -> AgentConfig:
