@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- The GitHub Action's `fail-on` input now defaults to empty, making the
+  workflow advisory: it reports findings but never fails on verdicts, matching
+  the CLI and pre-commit hook defaults. Workflows that relied on the previous
+  blocking default must set `fail-on: fail` (or `fail-on: review`) explicitly
+  to keep enforcing. The Action only passes `--fail-on` to the CLI when the
+  input is non-empty.
+
 ## [0.8.1] - 2026-09-29
 
 ### Fixed

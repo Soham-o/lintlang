@@ -123,7 +123,9 @@ The initializer does not scan, commit, publish, or enable repository features.
 The CLI has no verdict-failure threshold by default; a scannable input can report
 FAIL and still exit 0. `--fail-on fail` exits 1 for HIGH/CRITICAL findings;
 `--fail-on review` exits 1 for MEDIUM or higher. The first-party GitHub Action
-instead defaults its `fail-on` input to `fail` and always passes that threshold.
+defaults its `fail-on` input to empty and only passes `--fail-on` when it is
+set, so it is advisory by default too; set `fail-on: fail` or `fail-on: review`
+to enforce.
 
 Input errors remain exit 1 regardless of severity filtering, a baseline, or the
 presence of another valid input. Baseline validation/write errors and SARIF
