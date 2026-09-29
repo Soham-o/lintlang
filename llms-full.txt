@@ -418,10 +418,9 @@ instruction files and files with skill front matter, read from disk) reports a
 referenced project file that does not exist. It needs all of: a literal relative
 path with a directory part and a known file extension, in backticks or a Markdown
 link, outside fenced code; a first segment that exists beside the document or at
-the repository root; a path that resolves from no directory between the document
-and the repository root, both included (nothing above the root is read); and a
-line that does not talk about creating, renaming, removing or exemplifying it. It
-reads the filesystem, so it does not run on standard input, and it is deliberately quiet:
+the repository root; a path that resolves from neither; and a line that does not
+talk about creating, renaming, removing or exemplifying it. It reads the
+filesystem, so it does not run on standard input, and it is deliberately quiet:
 directories, globs, placeholders and paths into other projects are never reported.
 
 ### H5: Implicit Instruction Failure

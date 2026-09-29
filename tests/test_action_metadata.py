@@ -108,8 +108,9 @@ def test_selected_action_ref_is_installed_and_inputs_are_not_shell_interpolated(
         "LINTLANG_SARIF_FILE": "${{ inputs.sarif-file }}",
     }
     for step in (scan, sarif_scan):
-        assert 'if [ -n "$LINTLANG_FAIL_ON" ]; then' in step["run"]
-        assert 'LINTLANG_ARGS+=(--fail-on "$LINTLANG_FAIL_ON")' in step["run"]
+        assert 'LINTLANG_FAIL_ON_TRIMMED="$(printf \'%s\' "$LINTLANG_FAIL_ON" | tr -d \'[:space:]\')"' in step["run"]
+        assert 'if [ -n "$LINTLANG_FAIL_ON_TRIMMED" ]; then' in step["run"]
+        assert 'LINTLANG_ARGS+=(--fail-on "$LINTLANG_FAIL_ON_TRIMMED")' in step["run"]
         assert 'LINTLANG_ARGS+=(--baseline "$LINTLANG_BASELINE")' in step["run"]
         assert 'lintlang "${LINTLANG_ARGS[@]}"' in step["run"]
         assert "--write-baseline" not in step["run"]
@@ -168,6 +169,9 @@ def _write_review_only_fixture(tmp_path: Path) -> Path:
         # Advisory default: empty input never fails on verdicts.
         ("", "bad", 0),
         ("", "review-only", 0),
+        # Whitespace-only input trims to empty: still advisory, exit 0.
+        (" ", "bad", 0),
+        ("\t", "bad", 0),
         # 'fail' blocks only on FAIL verdicts.
         ("fail", "bad", 1),
         ("fail", "review-only", 0),
