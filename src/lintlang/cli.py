@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import sys
 from pathlib import Path
@@ -23,6 +24,18 @@ from .scanner import (
     scan_file,
     scan_source,
 )
+
+
+def _quality_threshold(value: str) -> float:
+    """Parse the legacy quality gate without accepting unusable thresholds."""
+    message = "must be a finite number between 0 and 100 (inclusive)"
+    try:
+        threshold = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(message) from None
+    if not math.isfinite(threshold) or not 0 <= threshold <= 100:
+        raise argparse.ArgumentTypeError(message)
+    return threshold
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -153,9 +166,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     scan_parser.add_argument(
         "--fail-under",
-        type=float,
+        type=_quality_threshold,
         default=0.0,
-        help="Exit with code 1 if quality score is below this threshold (legacy; prefer --fail-on)",
+        help="Exit with code 1 if quality score is below this finite 0-100 threshold; 0 disables (legacy; prefer --fail-on)",
     )
     scan_parser.add_argument(
         "--fail-on",
