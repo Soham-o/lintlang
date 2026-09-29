@@ -891,3 +891,36 @@ class TestEmptyScanIsNonzero:
         assert "No files were successfully scanned" in captured.err
         assert f"baseline {baseline} was not written." in captured.err
         assert not baseline.exists()
+
+    def test_scan_utf16_file_with_bom_exits_1_with_actionable_error(self, tmp_path, capsys):
+        utf16_file = tmp_path / "agent.yaml"
+        utf16_file.write_bytes(b"\xff\xfe" + "system_prompt: You are helpful.\n".encode("utf-16-le"))
+
+        exit_code = main(["scan", str(utf16_file), "--format", "json"])
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert len(data) == 1
+        assert data[0]["verdict"] == "ERROR"
+        err = data[0]["input_error"]
+        assert "LintLang reads UTF-8" in err
+        assert "appears to be UTF-16 encoded" in err
+        assert "save or convert the file as UTF-8" in err
+        assert "appears to be UTF-16 encoded" in captured.err
+
+    def test_scan_arbitrary_non_utf8_bytes_exits_1_with_actionable_error(self, tmp_path, capsys):
+        bad_file = tmp_path / "bad.json"
+        bad_file.write_bytes(b"\x80\x81\x82\xff")
+
+        exit_code = main(["scan", str(bad_file), "--format", "json"])
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert len(data) == 1
+        assert data[0]["verdict"] == "ERROR"
+        err = data[0]["input_error"]
+        assert "File is not valid UTF-8" in err
+        assert "LintLang requires UTF-8 encoding" in err
+        assert "File is not valid UTF-8" in captured.err
