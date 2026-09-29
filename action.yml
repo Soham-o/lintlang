@@ -48,7 +48,7 @@ runs:
         LINTLANG_BASELINE: ${{ inputs.baseline }}
       run: |
         LINTLANG_ARGS=(scan "$LINTLANG_PATH")
-        LINTLANG_FAIL_ON_TRIMMED="$(printf '%s' "$LINTLANG_FAIL_ON" | tr -d '[:space:]')"
+        LINTLANG_FAIL_ON_TRIMMED="$(python -c 'import sys; print(sys.argv[1].strip())' "$LINTLANG_FAIL_ON")"
         if [ -n "$LINTLANG_FAIL_ON_TRIMMED" ]; then
           LINTLANG_ARGS+=(--fail-on "$LINTLANG_FAIL_ON_TRIMMED")
         fi
@@ -73,7 +73,7 @@ runs:
           exit 1
         fi
         LINTLANG_ARGS=(scan "$LINTLANG_PATH" --format sarif)
-        LINTLANG_FAIL_ON_TRIMMED="$(printf '%s' "$LINTLANG_FAIL_ON" | tr -d '[:space:]')"
+        LINTLANG_FAIL_ON_TRIMMED="$(python -c 'import sys; print(sys.argv[1].strip())' "$LINTLANG_FAIL_ON")"
         if [ -n "$LINTLANG_FAIL_ON_TRIMMED" ]; then
           LINTLANG_ARGS+=(--fail-on "$LINTLANG_FAIL_ON_TRIMMED")
         fi

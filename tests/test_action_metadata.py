@@ -108,7 +108,7 @@ def test_selected_action_ref_is_installed_and_inputs_are_not_shell_interpolated(
         "LINTLANG_SARIF_FILE": "${{ inputs.sarif-file }}",
     }
     for step in (scan, sarif_scan):
-        assert 'LINTLANG_FAIL_ON_TRIMMED="$(printf \'%s\' "$LINTLANG_FAIL_ON" | tr -d \'[:space:]\')"' in step["run"]
+        assert 'LINTLANG_FAIL_ON_TRIMMED="$(python -c \'import sys; print(sys.argv[1].strip())\' "$LINTLANG_FAIL_ON")"' in step["run"]
         assert 'if [ -n "$LINTLANG_FAIL_ON_TRIMMED" ]; then' in step["run"]
         assert 'LINTLANG_ARGS+=(--fail-on "$LINTLANG_FAIL_ON_TRIMMED")' in step["run"]
         assert 'LINTLANG_ARGS+=(--baseline "$LINTLANG_BASELINE")' in step["run"]
@@ -172,12 +172,15 @@ def _write_review_only_fixture(tmp_path: Path) -> Path:
         # Whitespace-only input trims to empty: still advisory, exit 0.
         (" ", "bad", 0),
         ("\t", "bad", 0),
+        (" \t\n ", "bad", 0),
         # 'fail' blocks only on FAIL verdicts.
         ("fail", "bad", 1),
         ("fail", "review-only", 0),
+        (" \tfail\n ", "bad", 1),
         # 'review' blocks on FAIL or REVIEW verdicts.
         ("review", "bad", 1),
         ("review", "review-only", 1),
+        (" \treview\n ", "review-only", 1),
     ],
 )
 def test_fail_on_thresholds(tmp_path, output_format, fail_on, fixture, expected):
@@ -205,6 +208,45 @@ def test_fail_on_thresholds(tmp_path, output_format, fail_on, fixture, expected)
         document = json.loads((tmp_path / "report.sarif").read_text(encoding="utf-8"))
         assert document["version"] == "2.1.0"
         assert document["runs"][0]["results"]
+
+
+@pytest.mark.parametrize("output_format", ["terminal", "sarif"])
+@pytest.mark.parametrize("fail_on", ["f ail", "re\tview", "fail review", "invalid"])
+def test_action_rejects_malformed_fail_on(tmp_path, output_format, fail_on):
+    source = tmp_path / "agent.yaml"
+    source.write_text("system_prompt: Be concise.\n", encoding="utf-8")
+    env = _action_env(
+        tmp_path,
+        source,
+        LINTLANG_FAIL_ON=fail_on,
+        LINTLANG_SARIF_FILE=str(tmp_path / "report.sarif"),
+    )
+
+    completed = _run_action(output_format, tmp_path, env)
+
+    assert completed.returncode == 2
+    assert "invalid choice" in completed.stderr
+
+
+@pytest.mark.parametrize("output_format", ["terminal", "sarif"])
+@pytest.mark.parametrize("input_state", ["missing", "malformed"])
+def test_advisory_action_preserves_input_errors(tmp_path, output_format, input_state):
+    source = tmp_path / "agent.yaml"
+    if input_state == "malformed":
+        source.write_text("tools: [\n", encoding="utf-8")
+    env = _action_env(
+        tmp_path,
+        source,
+        LINTLANG_FAIL_ON="",
+        LINTLANG_SARIF_FILE=str(tmp_path / "report.sarif"),
+    )
+
+    completed = _run_action(output_format, tmp_path, env)
+
+    assert completed.returncode == 1
+    if output_format == "sarif":
+        document = json.loads((tmp_path / "report.sarif").read_text(encoding="utf-8"))
+        assert document["runs"][0]["invocations"][0]["executionSuccessful"] is False
 
 
 def test_sarif_step_writes_real_report_before_preserving_failing_verdict(tmp_path):
@@ -363,8 +405,9 @@ def test_action_baseline_passes_known_findings_and_fails_new_findings(tmp_path, 
 
 @pytest.mark.parametrize("output_format", ["terminal", "sarif"])
 @pytest.mark.parametrize("baseline_state", ["missing", "invalid"])
+@pytest.mark.parametrize("fail_on", ["", "fail"])
 def test_action_rejects_missing_or_invalid_baseline_without_creating_or_changing_it(
-    tmp_path, output_format, baseline_state
+    tmp_path, output_format, baseline_state, fail_on
 ):
     source = tmp_path / "agent.yaml"
     original = b"system_prompt: Be concise.\n"
@@ -373,7 +416,13 @@ def test_action_rejects_missing_or_invalid_baseline_without_creating_or_changing
     invalid_bytes = b'{"not": "a lintlang baseline"}\n'
     if baseline_state == "invalid":
         baseline.write_bytes(invalid_bytes)
-    env = _action_env(tmp_path, source, baseline, LINTLANG_SARIF_FILE=str(tmp_path / "report.sarif"))
+    env = _action_env(
+        tmp_path,
+        source,
+        baseline,
+        LINTLANG_FAIL_ON=fail_on,
+        LINTLANG_SARIF_FILE=str(tmp_path / "report.sarif"),
+    )
 
     completed = _run_action(output_format, tmp_path, env)
 
