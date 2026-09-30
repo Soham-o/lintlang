@@ -20,7 +20,7 @@ PINNED_VERSION = "0.8.2"
 # deliberately installed a newer lintlang must never be refused or told to
 # downgrade. The strict `==` pin applies only to the fetch/install guidance
 # (uvx / pip), never to an executable the user already has.
-_MINIMUM_VERSION = (0, 8, 1)
+_MINIMUM_VERSION = (0, 8, 2)
 
 # Claude Code runs hooks with the user's project directory as the working
 # directory, and `python3 -m lintlang` prepends the working directory to the
