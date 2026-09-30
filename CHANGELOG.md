@@ -1,15 +1,56 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.2] - 2026-09-30
+
+### Added
+
+- A Simplified-Chinese quickstart (`docs/zh-CN/`) with a drift guard keeping
+  it in step with the English docs. Added in
+  [#156](https://github.com/hermes-labs-ai/lintlang/pull/156).
 
 ### Changed
 
-- The GitHub Action's `fail-on` input now defaults to empty, making the
-  workflow advisory: it reports findings but never fails on verdicts, matching
-  the CLI and pre-commit hook defaults. Workflows that relied on the previous
-  blocking default must set `fail-on: fail` (or `fail-on: review`) explicitly
-  to keep enforcing. The Action only passes `--fail-on` to the CLI when the
-  input is non-empty.
+- **Breaking:** the GitHub Action's `fail-on` input now defaults to empty,
+  making the workflow advisory: it reports findings but only fails on input
+  errors, matching the CLI and pre-commit hook defaults. Workflows that relied
+  on the previous blocking default must set `fail-on: fail` (or
+  `fail-on: review`) explicitly to keep enforcing; the change takes effect when
+  you move the `uses:` ref to this release. The Action only passes `--fail-on`
+  to the CLI when the input is non-empty, and the input is now
+  whitespace-trimmed. Shipped in
+  [#149](https://github.com/hermes-labs-ai/lintlang/pull/149).
+- `skills/lintlang/SKILL.md` (previously the Pi-only skill) is now a
+  host-neutral agent skill: it resolves a runner — installed CLI first, then a
+  pinned `uvx` release (fetched on a cache miss), then a pip install line —
+  and walks through auditing an instruction file with the deterministic
+  scanner. Verified against this release. Replaced in
+  [#154](https://github.com/hermes-labs-ai/lintlang/pull/154).
+
+### Fixed
+
+- Scanning a UTF-16 or otherwise non-UTF-8 file no longer fails with a bare
+  `UnicodeDecodeError`: the message now says LintLang reads UTF-8, names the
+  detected encoding shape, and tells you to save or convert the file as UTF-8.
+  The improved decoding is shared by the file and standard-input paths, so
+  piped input gets the same hint instead of a generic read failure. Reported by
+  [@roli-lpci](https://github.com/roli-lpci) in
+  [#151](https://github.com/hermes-labs-ai/lintlang/issues/151) (labeled
+  `good first issue`); fixed by [@flypov](https://github.com/flypov) in
+  [#153](https://github.com/hermes-labs-ai/lintlang/pull/153).
+- `lintlang scan --fail-under` now validates the threshold as a finite float
+  in the inclusive range `[0, 100]` before scanning. Previously `nan`,
+  negative, and `-inf` values were accepted and silently disabled the score
+  gate (exit 0 on a clean fixture), while `inf` and values above 100 made the
+  gate always fail with a confusing "below threshold" message. Invalid values
+  now exit 2 with a clear argparse error. Reported in
+  [#150](https://github.com/hermes-labs-ai/lintlang/issues/150); fixed in
+  [#160](https://github.com/hermes-labs-ai/lintlang/pull/160).
+- The Claude Code plugin bundle manifests track the scanner release:
+  manifest versions are asserted equal to `lintlang.__version__` by a new
+  regression test, so a bundle can no longer silently ship a stale version.
+  The bundle also moved the hook's runner check from an exact `==` pin to a
+  `>=` minimum-version gate, so a deliberately newer installed scanner is
+  accepted instead of refused. Fixed in [#148](https://github.com/hermes-labs-ai/lintlang/pull/148).
 
 ## [0.8.1] - 2026-09-29
 
