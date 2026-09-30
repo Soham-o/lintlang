@@ -15,7 +15,7 @@ from typing import Any
 
 SUPPORTED_SUFFIXES = {".json", ".md", ".prompt", ".py", ".txt", ".yaml", ".yml"}
 MAX_FINDINGS = 8
-PINNED_VERSION = "0.8.1"
+PINNED_VERSION = "0.8.2"
 # The installed runner is accepted at the pinned release or newer: a user who
 # deliberately installed a newer lintlang must never be refused or told to
 # downgrade. The strict `==` pin applies only to the fetch/install guidance

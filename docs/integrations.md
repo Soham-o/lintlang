@@ -51,7 +51,7 @@ other hooks:
 ```yaml
 repos:
   - repo: https://github.com/hermes-labs-ai/lintlang
-    rev: v0.8.1
+    rev: v0.8.2
     hooks:
       - id: lintlang
 ```
