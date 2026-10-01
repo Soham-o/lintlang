@@ -178,7 +178,7 @@ Install LintLang with the Python interpreter for the environment that runs
 Hermes Agent, then check plugin discovery:
 
 ```bash
-python -m pip install lintlang==0.7.1
+python -m pip install lintlang==0.8.2
 hermes plugins list
 ```
 
