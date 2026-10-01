@@ -16,7 +16,7 @@ plugin, validate every host-specific setting, or establish provider compatibilit
 | Claude Code | Supported `Write`/`Edit`; named-file audit on request | Claude Code plugin support; scanner runner | Non-blocking guidance; no file rewriting | [Claude Code guide](../integrations/claude-code/README.md) |
 | Cursor | Named-file audit on request | Cursor marketplace plugin support; scanner runner | Advisory verdict; no file rewriting | [Cursor setup](../integrations/claude-code/README.md#use-in-cursor) |
 | GitHub Copilot CLI | Named-file audit on request | Copilot CLI plugin support; scanner runner | Advisory verdict; no file rewriting | [Copilot CLI guide](../integrations/copilot-cli/README.md) |
-| Pi | Named-file scan on request | Host-neutral agent skill; runner resolution (installed CLI, pinned `uvx`, pip) | Advisory verdict; no file rewriting | [Pi skill](../skills/lintlang/SKILL.md) |
+| Pi | Named-file scan on request | Host-neutral agent skill; runner resolution (installed CLI, pinned `uvx`, pip) | Advisory verdict; no file rewriting | [Pi setup](#pi) |
 | Gemini CLI | Successful `write_file` or `replace` | Configured Gemini CLI, uv, installed extension source | Non-blocking guidance; no file rewriting | [Gemini extension](gemini-cli-extension.md) |
 | OpenCode | Supported post-edit event with an explicit changed path | Documented legacy host contract and scanner on PATH | Non-blocking guidance; no file rewriting | [OpenCode guide](../integrations/opencode/README.md) |
 | Hermes Agent | First coding-turn `pre_verify` attempt | Plugin-capable host; LintLang in its Python environment | One continuation for eligible FAIL/ERROR inputs | [Hermes Agent setup](#hermes-agent) |
@@ -136,9 +136,7 @@ surfaces: an on-demand `lintlang-audit` skill for a named file and an automatic
 exposes that portable audit skill on request. The
 [GitHub Copilot CLI plugin](../integrations/copilot-cli/README.md) provides an
 on-demand `lintlang-audit` skill for a named file. The
-[Pi skill](../skills/lintlang/SKILL.md) resolves a scanner runner for a
-selected file: the installed CLI first, then a pinned `uvx` release, then a
-pip install line. The
+[Pi skill](#pi) installs from this repository as a Git package. The
 [Gemini extension](gemini-cli-extension.md) runs bundled source in an isolated uv
 environment; its recorded installation remains LintLang 0.5.3 with Gemini CLI
 0.32.1. That historical tested pair is not a pin to bulk-update with the package.
@@ -148,6 +146,31 @@ The [OpenCode adapter](../integrations/opencode/README.md) targets the documente
 path in arguments or metadata and does not infer a path hidden inside patch
 text. Published type-contract evidence is not a live-host compatibility claim
 for every release.
+
+## Pi
+
+Install the skill as a Pi package directly from this repository, pinned to a
+release tag:
+
+```bash
+pi install git:github.com/hermes-labs-ai/lintlang@v0.8.2
+pi list
+```
+
+Pi clones the tagged commit and discovers the one `lintlang` skill under the
+conventional `skills/` package directory. The repository has no `package.json`,
+so the install runs no npm step. This is a Git install; it is not an npm
+package or a Pi gallery listing. Add `--local` to declare the package in project
+settings instead. In a new Pi session, `/skill:lintlang` runs it on request.
+
+The skill does not install the scanner. It uses `lintlang` from `PATH`, then
+`uvx --from lintlang==0.8.2`, and otherwise relays a pip command. It reports an
+advisory verdict for a file you name and does not rewrite files. Its
+[verification step](../skills/lintlang/SKILL.md#verify-the-runner-without-a-checkout)
+checks the runner without a checkout. Recorded installation: Pi 0.99.2
+installed `v0.8.2` into an empty agent directory and listed `skill:lintlang`
+from the package with no resource diagnostics. Remove it with
+`pi remove git:github.com/hermes-labs-ai/lintlang`.
 
 ## Hermes Agent
 
