@@ -54,6 +54,7 @@ __all__ = [
     "RECOGNIZED_INSTRUCTION_RELATIVE_PATHS",
     "RECOGNIZED_INSTRUCTION_DIRECTORIES",
     "RECOGNIZED_INSTRUCTION_DIRECTORY_SUFFIXES",
+    "RECOGNIZED_INSTRUCTION_CURSOR_RULE_SUFFIXES",
     "discover_instruction_files",
     "is_recognized_instruction_path",
 ]
@@ -83,6 +84,10 @@ RECOGNIZED_INSTRUCTION_DIRECTORIES = frozenset({".github/instructions"})
 #: directory is not an instruction file; ``.instructions.md`` is the spelling
 #: the layout documents.
 RECOGNIZED_INSTRUCTION_DIRECTORY_SUFFIXES = frozenset({".instructions.md"})
+
+#: Filename suffixes accepted recursively inside .cursor/rules.
+#: Cursor project rules use .mdc; ordinary Markdown stays out of discovery.
+RECOGNIZED_INSTRUCTION_CURSOR_RULE_SUFFIXES = frozenset({".mdc"})
 
 
 def _parts(path: str | os.PathLike[str]) -> tuple[str, ...]:
@@ -137,6 +142,17 @@ def is_recognized_instruction_path(path: str | os.PathLike[str]) -> bool:
             for index in range(len(ancestors) - width + 1):
                 if ancestors[index : index + width] == directory:
                     return True
+
+    if any(
+        len(name) > len(suffix) and name.endswith(suffix)
+        for suffix in RECOGNIZED_INSTRUCTION_CURSOR_RULE_SUFFIXES
+    ):
+        directory = (".cursor", "rules")
+        ancestors = parts[:-1]
+        width = len(directory)
+        for index in range(len(ancestors) - width + 1):
+            if ancestors[index : index + width] == directory:
+                return True
 
     return False
 
