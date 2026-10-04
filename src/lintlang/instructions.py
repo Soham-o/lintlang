@@ -34,12 +34,11 @@ module never changes it.
 
 Known omissions
 ---------------
-Editor and host layouts that are not recognized, deliberately: ``.cursor/rules``,
-``.claude/agents``, and ``.windsurfrules``. Each would need its own file-shape
-decision (a rules directory is not one instruction document, and an agent
-definition is not a prompt file), and adding a surface here widens discovery,
-the pre-commit ``files:`` regex, and ``lintlang init`` at once. Pass such a file
-as an explicit scan argument, which is always canonical.
+Cursor project rules are recognized when they use the documented ``.mdc``
+spelling under ``.cursor/rules``. Other editor and host layouts remain
+deliberately unrecognized: ``.claude/agents`` and ``.windsurfrules``. The
+Cursor rule decision is intentionally narrow: ordinary Markdown in that
+directory is not an instruction surface.
 """
 
 from __future__ import annotations
