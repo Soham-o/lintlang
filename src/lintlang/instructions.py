@@ -15,6 +15,8 @@ Only exact, documented instruction surfaces:
 * ``*.instructions.md`` files directly or indirectly under a
   ``.github/instructions`` directory — the spelling the vendor documents for
   that layout, not every Markdown file that happens to live there
+* ``*.mdc`` files directly or indirectly under a ``.cursor/rules`` directory
+  — ordinary Markdown in that directory is not an instruction surface
 
 Case policy
 -----------
@@ -32,8 +34,8 @@ file that merely has a supported extension. Generic directory scanning
 (``scanner.scan_directory``) keeps its separate, broader extension sweep; this
 module never changes it.
 
-Known omissions
----------------
+Editor and host boundaries
+--------------------------
 Cursor project rules are recognized when they use the documented ``.mdc``
 spelling under ``.cursor/rules``. Other editor and host layouts remain
 deliberately unrecognized: ``.claude/agents`` and ``.windsurfrules``. The
