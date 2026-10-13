@@ -51,6 +51,38 @@ tools:
       type: object
 """)
 
+    def test_non_string_tool_name_under_functions_key_names_that_key(self):
+        with pytest.raises(
+            ValueError,
+            match=r"functions\[1\]\.name must be a string, got integer",
+        ):
+            parse_yaml("""
+functions:
+  - name: lookup
+    description: "Look up status"
+  - name: 42
+    description: "Look up status"
+""")
+
+    @pytest.mark.parametrize(
+        ("raw_name", "yaml_type"),
+        [
+            ("2024-01-01", "timestamp"),
+            ("2024-01-01T10:00:00", "timestamp"),
+            ("!!binary aGk=", "binary"),
+        ],
+    )
+    def test_non_string_tool_name_reports_yaml_type(self, raw_name, yaml_type):
+        with pytest.raises(
+            ValueError,
+            match=rf"tools\[0\]\.name must be a string, got {yaml_type}$",
+        ):
+            parse_yaml(f"""
+tools:
+  - name: {raw_name}
+    description: "Look up status"
+""")
+
 
 class TestParseJson:
     def test_openai_function_format(self):
