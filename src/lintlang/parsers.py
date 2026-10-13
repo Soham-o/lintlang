@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date, datetime
 from pathlib import Path
 
 import yaml
@@ -476,7 +477,8 @@ def _nested_prompts(data: object, path: str = "", depth: int = 0) -> list[tuple[
 
 def _validate_root_tool_names(data: dict) -> None:
     """Reject a root tool whose ``name`` is not a string, naming its location."""
-    tools_data = data.get("tools", data.get("functions", []))
+    key = "tools" if "tools" in data else "functions"
+    tools_data = data.get(key, [])
     if not isinstance(tools_data, list):
         return
     for index, td in enumerate(tools_data):
@@ -492,8 +494,11 @@ def _validate_root_tool_names(data: dict) -> None:
             type(None): "null",
             list: "array",
             dict: "object",
+            date: "timestamp",
+            datetime: "timestamp",
+            bytes: "binary",
         }.get(type(name), type(name).__name__)
-        raise ValueError(f"tools[{index}].name must be a string, got {yaml_type}")
+        raise ValueError(f"{key}[{index}].name must be a string, got {yaml_type}")
 
 
 def _localized_descriptions(value: object, path: str) -> list[str]:
