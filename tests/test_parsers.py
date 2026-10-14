@@ -83,8 +83,45 @@ tools:
     description: "Look up status"
 """)
 
+    def test_rejects_non_string_name_inside_function_wrapper(self):
+        with pytest.raises(
+            ValueError,
+            match=r"tools\[1\]\.function\.name must be a string, got integer$",
+        ):
+            parse_yaml("""
+tools:
+  - type: function
+    function:
+      name: lookup
+      description: "Look up status"
+  - type: function
+    function:
+      name: 42
+      description: "Look up status"
+""")
+
+    def test_function_wrapper_without_name_keeps_unnamed_fallback(self):
+        config = parse_yaml("""
+tools:
+  - type: function
+    function:
+      description: "Look up status"
+""")
+        assert [tool.name for tool in config.tools] == ["unnamed"]
+
 
 class TestParseJson:
+    def test_rejects_non_string_name_inside_function_wrapper(self):
+        with pytest.raises(
+            ValueError,
+            match=r"tools\[0\]\.function\.name must be a string, got integer$",
+        ):
+            parse_json(
+                json.dumps(
+                    {"tools": [{"type": "function", "function": {"name": 42, "description": "x"}}]}
+                )
+            )
+
     def test_openai_function_format(self):
         config = parse_json(
             json.dumps(

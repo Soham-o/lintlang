@@ -482,11 +482,19 @@ def _validate_root_tool_names(data: dict) -> None:
     if not isinstance(tools_data, list):
         return
     for index, td in enumerate(tools_data):
-        if not isinstance(td, dict) or "name" not in td or isinstance(td["name"], str):
+        if not isinstance(td, dict):
             continue
+        location = f"{key}[{index}].name"
+        holder = td
         if td.get("type") == "function" and "function" in td:
+            # OpenAI wrapper: the tool name lives on the inner function object.
+            holder = td["function"]
+            location = f"{key}[{index}].function.name"
+            if not isinstance(holder, dict):
+                continue
+        if "name" not in holder or isinstance(holder["name"], str):
             continue
-        name = td["name"]
+        name = holder["name"]
         yaml_type = {
             bool: "boolean",
             int: "integer",
@@ -498,7 +506,7 @@ def _validate_root_tool_names(data: dict) -> None:
             datetime: "timestamp",
             bytes: "binary",
         }.get(type(name), type(name).__name__)
-        raise ValueError(f"{key}[{index}].name must be a string, got {yaml_type}")
+        raise ValueError(f"{location} must be a string, got {yaml_type}")
 
 
 def _localized_descriptions(value: object, path: str) -> list[str]:
