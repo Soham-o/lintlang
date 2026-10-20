@@ -280,7 +280,10 @@ Traversal errors remain input errors rather than disappearing as clean results.
 
 `.lintlangignore` is read at the root of each directory passed to the scanner.
 Its limited glob matching and `--exclude` operate on paths relative to that scan
-directory; blank/comment lines are ignored. They are not a promise of every
+directory; blank/comment lines are ignored. Supported forms are `*`, `?`, `**`,
+a leading `/` that anchors to the scan directory, a trailing `/` that matches a
+directory and everything beneath it, and a slash-free pattern that matches at
+any depth (a pattern naming a directory also covers its contents). They are not a promise of every
 Git-ignore feature, nested ignore inheritance, or negation semantics. Use a
 known explicit input and inspect the report when scan coverage matters.
 
