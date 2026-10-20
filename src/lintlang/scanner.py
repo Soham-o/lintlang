@@ -121,7 +121,24 @@ def _glob_to_regex(pattern: str) -> re.Pattern | None:
     match ``notdocs/a.md`` and ``*.md`` match ``myfoo.md.bak``. Following
     gitignore, a pattern containing no ``/`` matches at any depth, so
     ``CHANGELOG.md`` and ``*.md`` keep excluding nested files as before.
+
+    Also following gitignore, a leading ``/`` anchors the pattern to the base
+    directory (``/notes.md`` matches the root ``notes.md`` only), and a pattern
+    that names a directory excludes everything beneath it. Inputs are file
+    paths, so before this ``vendor/`` and ``/notes.md`` compiled to regexes no
+    file path could match and silently excluded nothing. A trailing ``/``
+    restricts the pattern to directories, so ``vendor/`` does not match a file
+    named ``vendor``.
     """
+    directory_only = pattern.endswith("/")
+    pattern = pattern.rstrip("/")
+    # A separator at the start or in the middle anchors to the base directory.
+    anchored = "/" in pattern
+    if pattern.startswith("/"):
+        pattern = pattern[1:]
+    if not pattern:
+        return None
+
     parts: list[str] = []
     index = 0
     while index < len(pattern):
@@ -142,9 +159,12 @@ def _glob_to_regex(pattern: str) -> re.Pattern | None:
             index += 1
 
     body = "".join(parts)
-    prefix = "" if "/" in pattern else "(?:.*/)?"
+    prefix = "" if anchored else "(?:.*/)?"
+    # Match the named path itself (unless it must be a directory) or anything
+    # beneath it.
+    suffix = "/.*" if directory_only else "(?:/.*)?"
     try:
-        return re.compile(rf"\A{prefix}{body}\Z")
+        return re.compile(rf"\A{prefix}{body}{suffix}\Z")
     except re.error:
         return None
 

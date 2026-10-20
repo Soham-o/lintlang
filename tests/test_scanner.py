@@ -436,6 +436,21 @@ class TestFileTypeFiltering:
         assert "config.yaml" in scanned_names
         assert "draft.md" not in scanned_names
 
+    def test_lintlangignore_directory_and_root_anchored_patterns(self, tmp_path):
+        """`vendor/` and `/notes.md` are the most common gitignore forms; both
+        used to compile to regexes no file path could match."""
+        (tmp_path / "config.yaml").write_text("system_prompt: You are helpful.")
+        (tmp_path / "notes.md").write_text("You are a notes assistant.")
+        (tmp_path / "vendor").mkdir()
+        (tmp_path / "vendor" / "third.md").write_text("You are a vendored assistant.")
+        (tmp_path / "keep").mkdir()
+        (tmp_path / "keep" / "notes.md").write_text("You are a kept assistant.")
+        (tmp_path / ".lintlangignore").write_text("vendor/\n/notes.md\n")
+
+        results = scan_directory(tmp_path)
+        scanned = {Path(p).relative_to(tmp_path).as_posix() for p in results}
+        assert scanned == {"config.yaml", "keep/notes.md"}
+
 
 class TestGlobTranslation:
     """One shared glob translator backs `--exclude`, `.lintlangignore`, and
@@ -471,6 +486,36 @@ class TestGlobTranslation:
         assert self._matches("CHANGELOG.md", "docs/CHANGELOG.md")
         assert self._matches("*.md", "docs/deep/a.md")
         assert self._matches("test_*", "test_config.yaml")
+
+    def test_trailing_slash_excludes_everything_beneath_a_directory(self):
+        """A path being scanned is always a file, so `vendor/` compiled to
+        `\\Avendor/\\Z` matched nothing."""
+        assert self._matches("vendor/", "vendor/a.md")
+        assert self._matches("vendor/", "vendor/deep/a.md")
+        assert self._matches("vendor/", "src/vendor/a.md")
+        assert self._matches("src/vendor/", "src/vendor/a.md")
+        assert not self._matches("src/vendor/", "other/src/vendor/a.md")
+        assert not self._matches("vendor/", "myvendor/a.md")
+        assert not self._matches("vendor/", "vendor.md")
+        # Directory-only: a file named `vendor` is not a directory.
+        assert not self._matches("vendor/", "vendor")
+
+    def test_pattern_naming_a_directory_excludes_its_contents(self):
+        assert self._matches("vendor", "vendor")
+        assert self._matches("vendor", "vendor/a.md")
+        assert self._matches("vendor", "src/vendor/a.md")
+        assert not self._matches("vendor", "vendored/a.md")
+
+    def test_leading_slash_anchors_to_the_base_directory(self):
+        """The leading `/` was kept literally, and relative paths never start
+        with one, so a root-anchored pattern matched nothing."""
+        assert self._matches("/notes.md", "notes.md")
+        assert not self._matches("/notes.md", "docs/notes.md")
+        assert self._matches("/docs/*.md", "docs/a.md")
+        assert not self._matches("/docs/*.md", "x/docs/a.md")
+
+    def test_a_bare_slash_compiles_to_nothing(self):
+        assert _glob_to_regex("/") is None
 
     def test_single_star_does_not_cross_a_separator(self):
         assert self._matches("*/drop/*", "skills/drop/SKILL.md")
